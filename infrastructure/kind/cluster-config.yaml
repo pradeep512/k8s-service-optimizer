@@ -1,0 +1,36 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: k8s-optimizer
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+    - |
+      kind: InitConfiguration
+      nodeRegistration:
+        kubeletExtraArgs:
+          node-labels: "node-role=control-plane"
+    extraPortMappings:
+    # Dashboard
+    - containerPort: 30080
+      hostPort: 3000
+      protocol: TCP
+    # Backend API
+    - containerPort: 30081
+      hostPort: 8080
+      protocol: TCP
+
+  - role: worker
+    kubeadmConfigPatches:
+    - |
+      kind: JoinConfiguration
+      nodeRegistration:
+        kubeletExtraArgs:
+          node-labels: "node-role=worker,workload-type=general"
+
+  - role: worker
+    kubeadmConfigPatches:
+    - |
+      kind: JoinConfiguration
+      nodeRegistration:
+        kubeletExtraArgs:
+          node-labels: "node-role=worker,workload-type=general"

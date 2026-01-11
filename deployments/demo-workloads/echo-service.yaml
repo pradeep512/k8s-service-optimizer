@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-demo
+  namespace: k8s-optimizer
+  labels:
+    app: echo-demo
+    tier: frontend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: echo-demo
+  template:
+    metadata:
+      labels:
+        app: echo-demo
+        tier: frontend
+    spec:
+      containers:
+        - name: echo
+          image: ealen/echo-server:0.9.2
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-demo
+  namespace: k8s-optimizer
+spec:
+  selector:
+    app: echo-demo
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+  type: ClusterIP
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: echo-demo-hpa
+  namespace: k8s-optimizer
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: echo-demo
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 50
