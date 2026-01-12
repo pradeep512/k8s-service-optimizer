@@ -3,6 +3,7 @@ package collector
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/k8s-service-optimizer/backend/internal/k8s"
 	"github.com/k8s-service-optimizer/backend/internal/models"
@@ -104,6 +105,14 @@ func (c *k8sCollector) CollectHPAMetrics(namespace string) ([]models.HPAMetrics,
 	var metrics []models.HPAMetrics
 
 	for _, hpa := range hpaList.Items {
+		// Get timestamp - use LastScaleTime if available, otherwise use current time
+		var timestamp time.Time
+		if hpa.Status.LastScaleTime != nil {
+			timestamp = hpa.Status.LastScaleTime.Time
+		} else {
+			timestamp = time.Now()
+		}
+
 		hpaMetric := models.HPAMetrics{
 			Name:            hpa.Name,
 			Namespace:       hpa.Namespace,
@@ -111,7 +120,7 @@ func (c *k8sCollector) CollectHPAMetrics(namespace string) ([]models.HPAMetrics,
 			DesiredReplicas: hpa.Status.DesiredReplicas,
 			MinReplicas:     *hpa.Spec.MinReplicas,
 			MaxReplicas:     hpa.Spec.MaxReplicas,
-			Timestamp:       hpa.Status.LastScaleTime.Time,
+			Timestamp:       timestamp,
 		}
 
 		// Extract CPU target and current values from metrics
