@@ -18,7 +18,8 @@ This guide teaches Kubernetes concepts by walking through the complete setup and
 8. [Accessing the UI and API](#8-accessing-the-ui-and-api)
 9. [Demo Workload Walkthroughs](#9-demo-workload-walkthroughs)
 10. [Troubleshooting Guide](#10-troubleshooting-guide)
-11. [Learning Exercises](#11-learning-exercises)
+11. [QuickLoadTest](#101-quick-load-test-commands)
+12. [Learning Exercises](#11-learning-exercises)
 
 ---
 
@@ -1661,6 +1662,43 @@ kubectl -n k8s-optimizer exec -it <pod-name> -- sh
 
 # Copy files from pod
 kubectl -n k8s-optimizer cp <pod-name>:/path/to/file ./local-file
+```
+
+
+## 10.1. Quick load test commands 
+
+### Generate Load
+
+``` bash
+
+kubectl -n k8s-optimizer delete pod load-gen 2>/dev/null || true
+
+kubectl -n k8s-optimizer run -it --rm load-gen \
+  --image=busybox \
+  --restart=Never \
+  -- sh -c '
+  for i in $(seq 1 5); do
+    while true; do
+      wget -q -O- http://echo-demo.k8s-optimizer.svc.cluster.local >/dev/null
+      sleep 0.02
+    done &
+  done
+  wait'
+
+```
+
+### Observe HPA 
+
+```bash
+kubectl -n k8s-optimizer get hpa -w
+```
+
+### Observe pods
+
+```bash
+kubectl -n k8s-optimizer get all
+
+kubectl -n k8s-optimizer top pods
 ```
 
 ---
